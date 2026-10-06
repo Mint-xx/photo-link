@@ -21,18 +21,23 @@
 - **二维码**：`qrcode[pil]`
 
 ## 目录结构
-├── app.py # FastAPI 主应用
-├── clear_timing.py # 清理历史耗时字段的独立脚本（可选）
+
+```
+photo-link/
+├── app.py                 # FastAPI 主应用
+├── clear_timing.py        # 清理历史耗时字段的独立脚本（可选）
 ├── requirements.txt
 ├── .gitignore
+├── README.md
 ├── templates/
-│ ├── index.html # 首页
-│ ├── capture.html # 拍照页
-│ ├── view_auth.html # 查看照片页
-│ ├── admin.html # 管理后台
-│ └── admin_login.html # 后台登录页
-└── uploads/ # 照片存放目录（自动创建）
-
+│   ├── index.html         # 首页
+│   ├── capture.html       # 拍照页
+│   ├── view_auth.html     # 查看照片页
+│   ├── admin.html         # 管理后台
+│   └── admin_login.html   # 后台登录页
+└── uploads/               # 照片存放目录（自动创建）
+    └── .gitkeep
+```
 
 ## 本地运行
 
@@ -44,56 +49,92 @@ export GUEST_PASSWORD="你的游客密码"
 export PUBLIC_BASE="https://你的域名"
 
 python app.py
+```
 
-默认监听 127.0.0.1:5004
+默认监听 `127.0.0.1:5004`。
 
-环境变量
-变量名	说明	默认值
-ADMIN_PASSWORD	管理员密码	空
-GUEST_PASSWORD	游客密码（只读）	空
-PUBLIC_BASE	对外访问的完整域名	https://photo.example.com
-注意：如果 ADMIN_PASSWORD 和 GUEST_PASSWORD 都为空，后台将无法登录。请务必在部署时通过环境变量注入真实密码。
+## 环境变量
 
-接口一览
-方法	路径	说明
-GET	/	首页
-GET	/api/create	生成链接
-GET	/api/stats	首页统计
-GET	/api/quality-stats	各档位平均耗时
-GET	/api/qrcode	生成二维码
-GET	/api/lookup	凭密码查询照片
-GET	/c/{token}	拍照页
-POST	/upload/{token}	上传照片
-GET	/api/upload-stat/{token}	上报各阶段耗时
-GET	/v/{token}	照片查看页
-GET	/api/view/{token}	验证密码并取图
-GET	/admin	后台登录 / 后台首页
-POST	/admin	提交后台密码
-GET	/admin/logout	退出登录
-GET	/admin/photo/{token}	后台查看单张照片
-GET	/admin/photo/file/{token}	照片原始文件
-GET	/api/delete/{token}	删除单条（仅管理员）
-POST	/api/delete-batch	批量删除（仅管理员）
+| 变量名 | 说明 | 默认值 |
+|---|---|---|
+| `ADMIN_PASSWORD` | 管理员密码 | 空 |
+| `GUEST_PASSWORD` | 游客密码（只读） | 空 |
+| `PUBLIC_BASE` | 对外访问的完整域名 | 空（使用请求 Host） |
 
-##部署建议
+> **注意**：如果 `ADMIN_PASSWORD` 和 `GUEST_PASSWORD` 都为空，后台将无法登录。请务必在部署时通过环境变量注入真实密码。
 
-用 Nginx 或 Caddy 反向代理 127.0.0.1:5004
+## 部署
 
-建议前面挂 Cloudflare 或其它 CDN，走 HTTPS
-
-uploads/ 目录定期备份，数据库 data.db 也建议备份
-
-如果并发量大，把日志和事件表改为异步写入（代码里已经使用 FastAPI BackgroundTasks）
-
-License
-MIT
-
----
-
-## 五、`uploads/.gitkeep`
-
-空文件即可：
+### 首次部署
 
 ```bash
+cd /www
+git clone https://github.com/Mint-xx/photo-link.git
+cd photo-link
+
+# 虚拟环境
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 建 uploads 目录（.gitkeep 会被 clone 下来，目录已存在）
+# 如果没被 clone 到，手动建：
 mkdir -p uploads
-touch uploads/.gitkeep
+
+# 设置环境变量
+export ADMIN_PASSWORD="你的真实管理员密码"
+export GUEST_PASSWORD="你的真实游客密码"
+export PUBLIC_BASE="https://photo.xiaoxue1.cc.cd"
+
+# 试跑
+python app.py
+```
+
+### 更新代码
+
+```bash
+cd /www/photo-link
+git pull
+
+# 如果依赖有变
+source .venv/bin/activate && pip install -r requirements.txt
+
+# 重启服务
+systemctl restart photo-link   # 或者你用的守护方式
+```
+
+### 部署建议
+
+- 用 Nginx 或 Caddy 反向代理 `127.0.0.1:5004`
+- 建议前面挂 Cloudflare 或其它 CDN，走 HTTPS
+- `uploads/` 目录定期备份，数据库 `data.db` 也建议备份
+- 如果并发量大，把日志和事件表改为异步写入（代码里已使用 FastAPI `BackgroundTasks`）
+
+## 接口一览
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/` | 首页 |
+| GET | `/api/create` | 生成链接 |
+| GET | `/api/stats` | 首页统计 |
+| GET | `/api/quality-stats` | 各档位平均耗时 |
+| GET | `/api/qrcode` | 生成二维码 |
+| GET | `/api/lookup` | 凭密码查询照片 |
+| GET | `/c/{token}` | 拍照页 |
+| POST | `/upload/{token}` | 上传照片 |
+| GET | `/api/upload-stat/{token}` | 上报各阶段耗时 |
+| GET | `/v/{token}` | 照片查看页 |
+| GET | `/api/view/{token}` | 验证密码并取图 |
+| GET | `/admin` | 后台登录 / 后台首页 |
+| POST | `/admin` | 提交后台密码 |
+| GET | `/admin/logout` | 退出登录 |
+| GET | `/admin/photo/{token}` | 后台查看单张照片 |
+| GET | `/admin/photo/file/{token}` | 照片原始文件 |
+| GET | `/api/delete/{token}` | 删除单条（仅管理员） |
+| POST | `/api/delete-batch` | 批量删除（仅管理员） |
+
+## License
+
+MIT

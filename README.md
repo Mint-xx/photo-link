@@ -105,6 +105,10 @@ source .venv/bin/activate && pip install -r requirements.txt
 systemctl restart photo-link   # 或者你用的守护方式
 ```
 
+### 长期部署
+
+- 发行作品有名为“长期部署所需文件.zip”的文件
+
 ### 部署建议
 
 - 用 Nginx 或 Caddy 反向代理 `127.0.0.1:5004`

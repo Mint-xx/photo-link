@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>查看照片</title>
+<style>
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  /* 所有按钮/链接点击时不要蓝色高亮和聚焦框 */
+  button, a, input, .dot, .copy-btn, .gen-btn, .view-trigger,
+  .modal-btn, .download-btn, .modal-close {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+  }
+  button:focus, a:focus, input:focus,
+  .dot:focus, .copy-btn:focus, .gen-btn:focus, .view-trigger:focus,
+  .modal-btn:focus, .download-btn:focus, .modal-close:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  /* 但输入框保留聚焦时的边框提示 */
+  input:focus {
+    outline: none;
+  }
+
+  html, body {
+    margin: 0;
+    background: #0b0b0c;
+    color: #eaeaea;
+    font-family: system-ui, -apple-system, "Segoe UI",
+                 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    background: #16171a;
+    border: 1px solid #26282d;
+    border-radius: 16px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 480px;
+    text-align: center;
+  }
+  h1 { font-size: 17px; margin: 0 0 6px; font-weight: 600; }
+  p { color: #8a8a8a; font-size: 13px; margin: 0 0 22px; }
+  input {
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #33353b;
+    background: #0e0f11;
+    color: #fff;
+    font-size: 20px;
+    text-align: center;
+    letter-spacing: 8px;
+    font-family: ui-monospace, monospace;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: #4b5563; }
+  #go {
+    width: 100%;
+    margin-top: 14px;
+    padding: 13px;
+    border: 0;
+    border-radius: 10px;
+    background: #fff;
+    color: #111;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #go:disabled { opacity: .5; cursor: default; }
+  .err {
+    color: #f87171;
+    font-size: 13px;
+    margin-top: 12px;
+    min-height: 18px;
+  }
+  code { color: #6b7280; font-size: 12px; }
+  .foot { margin-top: 18px; }
+
+  /* 结果 */
+  .viewer { padding: 24px 22px; }
+  .info {
+    text-align: left;
+    background: #0e0f11;
+    border: 1px solid #26282d;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid #1e1f24;
+    gap: 12px;
+  }
+  .info-row:last-child { border-bottom: 0; }
+  .info-label {
+    color: #8a8a8a;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .info-value {
+    font-family: ui-monospace, monospace;
+    color: #eaeaea;
+    font-size: 12.5px;
+    text-align: right;
+    word-break: break-all;
+  }
+  .info-value.ip { color: #60a5fa; font-weight: 600; }
+
+  .viewer img {
+    width: 100%;
+    max-height: 65vh;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 8px 40px #000a;
+    display: block;
+    margin: 0 auto;
+  }
+  .actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+  }
+  .actions a,
+  .actions button {
+    flex: 1;
+    text-align: center;
+    text-decoration: none;
+    padding: 11px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 0;
+    cursor: pointer;
+  }
+  .actions a {
+    background: #2563eb;
+    color: #fff;
+  }
+  .actions button {
+    background: #26282d;
+    color: #eaeaea;
+  }
+  .actions a:hover { background: #1d4ed8; }
+  .actions button:hover { background: #33353b; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <h1>🔒 需要查看密码</h1>
+  <p>请输入 6 位数字密码</p>
+  <input id="pwd" type="tel" inputmode="numeric" maxlength="6"
+         autocomplete="off" placeholder="······">
+  <button id="go">查看照片</button>
+  <div class="err" id="err"></div>
+  <div class="foot"><code>{{ token }}</code></div>
+</div>
+
+<script>
+const TOKEN = {{ token | tojson }};
+const inp = document.getElementById('pwd');
+const btn = document.getElementById('go');
+const err = document.getElementById('err');
+const card = document.getElementById('card');
+
+inp.focus();
+
+inp.addEventListener('input', () => {
+  inp.value = inp.value.replace(/\D/g, '').slice(0, 6);
+  err.textContent = '';
+  if (inp.value.length === 6) btn.click();
+});
+
+inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter') btn.click();
+});
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+btn.onclick = async () => {
+  const password = inp.value;
+  if (password.length !== 6) {
+    err.textContent = '请输入 6 位数字';
+    return;
+  }
+  btn.disabled = true;
+  err.textContent = '验证中…';
+
+  try {
+    const r = await fetch('/api/view/' + TOKEN + '?password=' + encodeURIComponent(password));
+    if (r.ok) {
+      const d = await r.json();
+      showPhoto(d);
+      return;
+    }
+    if (r.status === 429) {
+      err.textContent = '尝试次数过多，请 5 分钟后再试';
+    } else if (r.status === 403) {
+      err.textContent = '密码错误';
+    } else if (r.status === 404) {
+      err.textContent = '链接无效';
+    } else {
+      err.textContent = '请求失败（' + r.status + '）';
+    }
+  } catch (e) {
+    err.textContent = '网络错误，请重试';
+  }
+
+  btn.disabled = false;
+  inp.select();
+};
+
+function showPhoto(d) {
+  const isJpg = d.data_url.startsWith('data:image/jpeg');
+  const ext = isJpg ? 'jpg' : 'png';
+  const qMap = { tiny: "极省", low: "省流", standard: "标准", high: "高清" };
+  const qLabel = qMap[d.quality] || "省流";
+
+  card.classList.add('viewer');
+  card.innerHTML = `
+    <div class="info">
+      <div class="info-row">
+        <span class="info-label">画质</span>
+        <span class="info-value">${esc(qLabel)}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">拍照 IP</span>
+        <span class="info-value ip">${esc(d.remote_ip)}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">拍照时间</span>
+        <span class="info-value">${esc(d.used_at)}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">打开链接 IP</span>
+        <span class="info-value">${esc(d.visit_ip)}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">打开时间</span>
+        <span class="info-value">${esc(d.visit_at)}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">总耗时</span>
+        <span class="info-value">${d.total_ms ? esc(d.total_ms) + ' ms' : '—'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">阶段拆分</span>
+        <span class="info-value">启动 ${esc(d.cam_ms)} / 曝光 ${esc(d.wait_ms)} / 压缩 ${esc(d.compress_ms)} / 上传 ${esc(d.upload_ms)} ms</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">上传速度</span>
+        <span class="info-value">${esc(d.speed_kbps)} KB/s</span>
+      </div>
+    </div>
+
+    <img src="${d.data_url}" alt="photo">
+
+    <div class="actions">
+      <a href="${d.data_url}" download="${esc(d.token)}.${ext}">下载</a>
+      <button onclick="location.reload()">返回</button>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

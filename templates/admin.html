@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>管理后台</title>
+<style>
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, a, input { outline: none; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    max-width: 1300px;
+    margin: 32px auto;
+    padding: 0 16px;
+    background: #f6f7f9;
+    color: #111;
+    -webkit-font-smoothing: antialiased;
+  }
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h1 { font-size: 20px; margin: 0; }
+  .head .right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .head .right a {
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+    text-decoration: none;
+    font-size: 13px;
+    transition: all .15s;
+  }
+  .head .right a:hover { background: #f3f4f6; color: #111; }
+
+  .badge-role {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-role.admin {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #059669;
+  }
+  .badge-role.guest {
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    color: #b45309;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 18px;
+    background: #eef0f3;
+    border-radius: 12px;
+    padding: 5px;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 9px 20px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #6b7280;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .18s ease;
+    white-space: nowrap;
+    font-family: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .tab:hover:not(.active) { color: #111; }
+  .tab.active {
+    background: #fff;
+    color: #111;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .tab .count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    background: #e5e7eb;
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tab.active .count {
+    background: #6366f1;
+    color: #fff;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .search-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .search-bar input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    max-width: 400px;
+    padding: 9px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    outline: none;
+    transition: border-color .15s;
+    font-family: inherit;
+  }
+  .search-bar input[type="text"]:focus { border-color: #6366f1; }
+  .search-bar button[type="submit"] {
+    padding: 9px 18px;
+    border: 0;
+    border-radius: 8px;
+    background: #6366f1;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity .15s;
+  }
+  .search-bar button[type="submit"]:hover { opacity: .88; }
+  .search-bar .clear {
+    padding: 9px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #6b7280;
+    font-size: 13px;
+    text-decoration: none;
+    transition: all .15s;
+  }
+  .search-bar .clear:hover { background: #f3f4f6; color: #111; }
+
+  .batch-del-btn {
+    padding: 9px 18px;
+    border: 0;
+    border-radius: 8px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .15s;
+    margin-left: auto;
+  }
+  .batch-del-btn:hover:not(:disabled) { background: #dc2626; }
+  .batch-del-btn:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+    background: #9ca3af;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #eef0f3;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .pagination .info { color: #6b7280; }
+  .pagination .info b { color: #111; font-weight: 600; }
+  .pagination .btns { display: flex; gap: 6px; }
+  .pagination a, .pagination span.disabled {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-decoration: none;
+    transition: all .15s;
+  }
+  .pagination a {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+  }
+  .pagination a:hover { background: #f3f4f6; color: #111; }
+  .pagination span.disabled {
+    background: #f9fafb;
+    border: 1px solid #f3f4f6;
+    color: #d1d5db;
+    cursor: not-allowed;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+  }
+  th, td {
+    padding: 11px 12px;
+    text-align: left;
+    font-size: 12.5px;
+    border-bottom: 1px solid #eef0f3;
+    vertical-align: middle;
+  }
+  th {
+    background: #fafbfc;
+    font-weight: 600;
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: 0; }
+  tr:hover td { background: #fafbfc; }
+
+  button.del {
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: #f3f4f6;
+    color: #374151;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  button.del:hover { background: #fee2e2; color: #dc2626; }
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #6366f1;
+    vertical-align: middle;
+  }
+
+  .ok { color: #059669; font-weight: 600; }
+  .no { color: #9ca3af; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .pwd {
+    font-family: ui-monospace, monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: #b45309;
+    letter-spacing: 2px;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px;
+    color: #374151;
+  }
+  .ip {
+    font-family: ui-monospace, monospace;
+    font-size: 11.5px;
+    color: #0369a1;
+    background: #f0f9ff;
+    padding: 2px 7px;
+    border-radius: 5px;
+    border: 1px solid #e0f2fe;
+    white-space: nowrap;
+  }
+  .time {
+    font-size: 12px;
+    color: #374151;
+    font-family: ui-monospace, monospace;
+    white-space: nowrap;
+  }
+  .ua {
+    color: #6b7280;
+    font-size: 11.5px;
+    word-break: break-all;
+  }
+  .empty {
+    text-align: center;
+    color: #9ca3af;
+    padding: 50px 0;
+    font-size: 14px;
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 0 10px; margin-top: 20px; }
+    h1 { font-size: 17px; }
+    .tab { padding: 8px 14px; font-size: 12.5px; }
+    th, td { padding: 9px 8px; font-size: 11.5px; }
+    .pwd { font-size: 13px; letter-spacing: 1px; }
+    .ip, code, .time { font-size: 10.5px; }
+    .search-bar input[type="text"] { max-width: 100%; }
+    .pagination { flex-direction: column; align-items: stretch; text-align: center; }
+    .pagination .btns { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>管理后台</h1>
+  <div class="right">
+    {% if role == 'admin' %}
+      <span class="badge-role admin">✓ 管理员</span>
+    {% else %}
+      <span class="badge-role guest"> 游客（只读）</span>
+    {% endif %}
+    <a href="/">首页</a>
+    <a href="/admin?tab={{ active_tab }}">刷新</a>
+    <a href="/admin/logout">退出</a>
+  </div>
+</div>
+
+<!-- Tab -->
+<div class="tabs">
+  <a class="tab {% if active_tab == 'links' %}active{% endif %}"
+     href="/admin?tab=links">
+    管理链接 <span class="count">{{ p_tok.total }}</span>
+  </a>
+  <a class="tab {% if active_tab == 'visits' %}active{% endif %}"
+     href="/admin?tab=visits">
+    打开记录 <span class="count">{{ p_vis.total }}</span>
+  </a>
+  <a class="tab {% if active_tab == 'creates' %}active{% endif %}"
+     href="/admin?tab=creates">
+    创建记录 <span class="count">{{ p_cre.total }}</span>
+  </a>
+  <a class="tab {% if active_tab == 'homes' %}active{% endif %}"
+     href="/admin?tab=homes">
+    首页访问 <span class="count">{{ p_hom.total }}</span>
+  </a>
+</div>
+
+<!-- Panel 1：管理链接 -->
+<div class="panel {% if active_tab == 'links' %}active{% endif %}" id="panel-links">
+
+  <form class="search-bar" method="GET" action="/admin">
+    <input type="hidden" name="tab" value="links">
+    <input type="text" name="q" value="{{ p_tok.q }}"
+           placeholder="输入 ID 或密码搜索…" autocomplete="off">
+    <button type="submit">搜索</button>
+    {% if p_tok.q %}
+      <a class="clear" href="/admin?tab=links">✕ 清除</a>
+    {% endif %}
+    {% if role == 'admin' %}
+      <button type="button" id="batchDelBtn" class="batch-del-btn" disabled>
+        批量删除 (<span id="selectedCount">0</span>)
+      </button>
+    {% endif %}
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 32px; text-align: center;">
+          {% if role == 'admin' %}
+            <input type="checkbox" id="checkAll" title="全选">
+          {% endif %}
+        </th>
+        <th>ID</th>
+        <th>密码</th>
+        <th>画质</th>
+        <th>打开链接 IP</th>
+        <th>打开时间</th>
+        <th>拍照 IP</th>
+        <th>拍照时间</th>
+        <th>状态</th>
+        <th>总耗时</th>
+        <th>上传速度</th>
+        <th>照片</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% if items %}
+      {% for it in items %}
+      <tr>
+        <td style="text-align: center;">
+          {% if role == 'admin' %}
+            <input type="checkbox" class="row-check" value="{{ it.token }}">
+          {% endif %}
+        </td>
+        <td><code>{{ it.token }}</code></td>
+        <td><span class="pwd">{{ it.password }}</span></td>
+        <td>
+          {% if it.quality == "极省" %}
+            <span style="color:#64748b;font-weight:600;">极省</span>
+          {% elif it.quality == "省流" %}
+            <span style="color:#059669;font-weight:600;">省流</span>
+          {% elif it.quality == "标准" %}
+            <span style="color:#2563eb;font-weight:600;">标准</span>
+          {% elif it.quality == "高清" %}
+            <span style="color:#d97706;font-weight:600;">高清</span>
+          {% else %}
+            <span style="color:#9ca3af;">{{ it.quality }}</span>
+          {% endif %}
+        </td>
+        <td><span class="ip">{{ it.visit_ip }}</span></td>
+        <td><span class="time">{{ it.visit_at }}</span></td>
+        <td><span class="ip">{{ it.remote_ip }}</span></td>
+        <td><span class="time">{{ it.used_at }}</span></td>
+        <td>
+          {% if it.used %}
+            <span class="ok">✓ 已拍</span>
+          {% elif it.visit_ip != "—" %}
+            <span style="color:#f59e0b;font-weight:600;">已打开</span>
+          {% else %}
+            <span class="no">未打开</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if it.used and it.total_ms %}
+            <span class="time" title="启动 {{ it.cam_ms }}ms · 曝光 {{ it.wait_ms }}ms · 压缩 {{ it.compress_ms }}ms · 上传 {{ it.upload_ms }}ms">
+              {{ it.total_ms }} ms
+            </span>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          {% if it.used and it.speed_kbps %}
+            <span class="time">{{ it.speed_kbps }} KB/s</span>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          {% if it.used %}
+            <a href="/admin/photo/{{ it.token }}" target="_blank">{{ it.size_kb }} KB</a>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          {% if role == 'admin' %}
+            <button class="del" onclick="del('{{ it.token }}')">删除</button>
+          {% else %}
+            <span class="no" title="游客无权删除">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="13" class="empty">
+          {% if p_tok.q %}没有匹配 "{{ p_tok.q }}" 的记录{% else %}暂无记录{% endif %}
+        </td>
+      </tr>
+    {% endif %}
+    </tbody>
+  </table>
+
+  {% if p_tok.total > 0 %}
+  <div class="pagination">
+    <div class="info">
+      共 <b>{{ p_tok.total }}</b> 条
+      {% if p_tok.q %}（搜索："{{ p_tok.q }}"）{% endif %}
+      · 第 <b>{{ p_tok.page }}</b> / {{ p_tok.total_pages }} 页
+      · 每页 {{ page_size }} 条
+    </div>
+    <div class="btns">
+      {% if p_tok.has_prev %}
+        <a href="/admin?tab=links&page={{ p_tok.page - 1 }}{% if p_tok.q %}&q={{ p_tok.q | urlencode }}{% endif %}">← 上一页</a>
+      {% else %}
+        <span class="disabled">← 上一页</span>
+      {% endif %}
+      {% if p_tok.has_next %}
+        <a href="/admin?tab=links&page={{ p_tok.page + 1 }}{% if p_tok.q %}&q={{ p_tok.q | urlencode }}{% endif %}">下一页 →</a>
+      {% else %}
+        <span class="disabled">下一页 →</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Panel 2：打开记录 -->
+<div class="panel {% if active_tab == 'visits' %}active{% endif %}" id="panel-visits">
+
+  <form class="search-bar" method="GET" action="/admin">
+    <input type="hidden" name="tab" value="visits">
+    <input type="text" name="vq" value="{{ p_vis.q }}"
+           placeholder="输入链接 ID 或 IP 搜索…" autocomplete="off">
+    <button type="submit">搜索</button>
+    {% if p_vis.q %}
+      <a class="clear" href="/admin?tab=visits">✕ 清除</a>
+    {% endif %}
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 220px;">时间</th>
+        <th style="width: 220px;">IP</th>
+        <th>链接 ID</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% if visit_items %}
+      {% for it in visit_items %}
+      <tr>
+        <td><span class="time">{{ it.ts }}</span></td>
+        <td><span class="ip">{{ it.ip }}</span></td>
+        <td><code>{{ it.token }}</code></td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="3" class="empty">
+          {% if p_vis.q %}没有匹配 "{{ p_vis.q }}" 的记录{% else %}暂无打开记录{% endif %}
+        </td>
+      </tr>
+    {% endif %}
+    </tbody>
+  </table>
+
+  {% if p_vis.total > 0 %}
+  <div class="pagination">
+    <div class="info">
+      共 <b>{{ p_vis.total }}</b> 条
+      {% if p_vis.q %}（搜索："{{ p_vis.q }}"）{% endif %}
+      · 第 <b>{{ p_vis.page }}</b> / {{ p_vis.total_pages }} 页
+      · 每页 {{ page_size }} 条
+    </div>
+    <div class="btns">
+      {% if p_vis.has_prev %}
+        <a href="/admin?tab=visits&vp={{ p_vis.page - 1 }}{% if p_vis.q %}&vq={{ p_vis.q | urlencode }}{% endif %}">← 上一页</a>
+      {% else %}
+        <span class="disabled">← 上一页</span>
+      {% endif %}
+      {% if p_vis.has_next %}
+        <a href="/admin?tab=visits&vp={{ p_vis.page + 1 }}{% if p_vis.q %}&vq={{ p_vis.q | urlencode }}{% endif %}">下一页 →</a>
+      {% else %}
+        <span class="disabled">下一页 →</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Panel 3：创建记录 -->
+<div class="panel {% if active_tab == 'creates' %}active{% endif %}" id="panel-creates">
+
+  <form class="search-bar" method="GET" action="/admin">
+    <input type="hidden" name="tab" value="creates">
+    <input type="text" name="cq" value="{{ p_cre.q }}"
+           placeholder="输入链接 ID 或 IP 搜索…" autocomplete="off">
+    <button type="submit">搜索</button>
+    {% if p_cre.q %}
+      <a class="clear" href="/admin?tab=creates">✕ 清除</a>
+    {% endif %}
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 220px;">时间</th>
+        <th style="width: 220px;">IP</th>
+        <th>链接 ID</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% if create_items %}
+      {% for it in create_items %}
+      <tr>
+        <td><span class="time">{{ it.ts }}</span></td>
+        <td><span class="ip">{{ it.ip }}</span></td>
+        <td><code>{{ it.token }}</code></td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="3" class="empty">
+          {% if p_cre.q %}没有匹配 "{{ p_cre.q }}" 的记录{% else %}暂无创建记录{% endif %}
+        </td>
+      </tr>
+    {% endif %}
+    </tbody>
+  </table>
+
+  {% if p_cre.total > 0 %}
+  <div class="pagination">
+    <div class="info">
+      共 <b>{{ p_cre.total }}</b> 条
+      {% if p_cre.q %}（搜索："{{ p_cre.q }}"）{% endif %}
+      · 第 <b>{{ p_cre.page }}</b> / {{ p_cre.total_pages }} 页
+      · 每页 {{ page_size }} 条
+    </div>
+    <div class="btns">
+      {% if p_cre.has_prev %}
+        <a href="/admin?tab=creates&cp={{ p_cre.page - 1 }}{% if p_cre.q %}&cq={{ p_cre.q | urlencode }}{% endif %}">← 上一页</a>
+      {% else %}
+        <span class="disabled">← 上一页</span>
+      {% endif %}
+      {% if p_cre.has_next %}
+        <a href="/admin?tab=creates&cp={{ p_cre.page + 1 }}{% if p_cre.q %}&cq={{ p_cre.q | urlencode }}{% endif %}">下一页 →</a>
+      {% else %}
+        <span class="disabled">下一页 →</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Panel 4：首页访问 -->
+<div class="panel {% if active_tab == 'homes' %}active{% endif %}" id="panel-homes">
+
+  <form class="search-bar" method="GET" action="/admin">
+    <input type="hidden" name="tab" value="homes">
+    <input type="text" name="hq" value="{{ p_hom.q }}"
+           placeholder="输入 IP 搜索…" autocomplete="off">
+    <button type="submit">搜索</button>
+    {% if p_hom.q %}
+      <a class="clear" href="/admin?tab=homes">✕ 清除</a>
+    {% endif %}
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 220px;">时间</th>
+        <th style="width: 220px;">IP</th>
+        <th>设备 / 浏览器</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% if home_items %}
+      {% for it in home_items %}
+      <tr>
+        <td><span class="time">{{ it.ts }}</span></td>
+        <td><span class="ip">{{ it.ip }}</span></td>
+        <td class="ua">{{ it.ua or '—' }}</td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="3" class="empty">
+          {% if p_hom.q %}没有匹配 "{{ p_hom.q }}" 的记录{% else %}暂无首页访问记录{% endif %}
+        </td>
+      </tr>
+    {% endif %}
+    </tbody>
+  </table>
+
+  {% if p_hom.total > 0 %}
+  <div class="pagination">
+    <div class="info">
+      共 <b>{{ p_hom.total }}</b> 条
+      {% if p_hom.q %}（搜索："{{ p_hom.q }}"）{% endif %}
+      · 第 <b>{{ p_hom.page }}</b> / {{ p_hom.total_pages }} 页
+      · 每页 {{ page_size }} 条
+    </div>
+    <div class="btns">
+      {% if p_hom.has_prev %}
+        <a href="/admin?tab=homes&hp={{ p_hom.page - 1 }}{% if p_hom.q %}&hq={{ p_hom.q | urlencode }}{% endif %}">← 上一页</a>
+      {% else %}
+        <span class="disabled">← 上一页</span>
+      {% endif %}
+      {% if p_hom.has_next %}
+        <a href="/admin?tab=homes&hp={{ p_hom.page + 1 }}{% if p_hom.q %}&hq={{ p_hom.q | urlencode }}{% endif %}">下一页 →</a>
+      {% else %}
+        <span class="disabled">下一页 →</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+async function del(token) {
+  if (!confirm('确定删除 ' + token + ' 及其照片？')) return;
+
+  const r = await fetch('/api/delete/' + token);
+  if (r.ok) {
+    location.reload();
+  } else if (r.status === 403) {
+    alert('无权限：游客不能删除记录');
+  } else {
+    alert('删除失败');
+  }
+}
+
+/* ============================================================
+   批量选择 + 批量删除
+   ============================================================ */
+(function() {
+  const checkAll = document.getElementById('checkAll');
+  const batchDelBtn = document.getElementById('batchDelBtn');
+  const selectedCount = document.getElementById('selectedCount');
+  if (!batchDelBtn) return; // 游客不启用
+
+  function getRowChecks() {
+    return document.querySelectorAll('.row-check');
+  }
+
+  function updateCount() {
+    const checks = getRowChecks();
+    const checked = document.querySelectorAll('.row-check:checked');
+    const n = checked.length;
+
+    if (selectedCount) selectedCount.textContent = n;
+    batchDelBtn.disabled = n === 0;
+
+    if (checkAll) {
+      checkAll.checked = checks.length > 0 && n === checks.length;
+      checkAll.indeterminate = n > 0 && n < checks.length;
+    }
+  }
+
+  if (checkAll) {
+    checkAll.onchange = () => {
+      getRowChecks().forEach(c => { c.checked = checkAll.checked; });
+      updateCount();
+    };
+  }
+
+  getRowChecks().forEach(c => {
+    c.addEventListener('change', updateCount);
+  });
+
+  batchDelBtn.onclick = async () => {
+    const tokens = Array.from(document.querySelectorAll('.row-check:checked'))
+      .map(c => c.value);
+    if (tokens.length === 0) return;
+
+    if (!confirm(`确定删除选中的 ${tokens.length} 条记录及其照片？此操作不可恢复。`)) return;
+
+    const oldText = batchDelBtn.textContent;
+    batchDelBtn.disabled = true;
+    batchDelBtn.textContent = '删除中…';
+
+    try {
+      const fd = new FormData();
+      tokens.forEach(t => fd.append('tokens', t));
+
+      const r = await fetch('/api/delete-batch', {
+        method: 'POST',
+        body: fd,
+      });
+
+      let d = {};
+      try { d = await r.json(); } catch (e) {}
+
+      if (r.ok && d.ok) {
+        alert(`已删除 ${d.deleted} 条记录`);
+        location.reload();
+        return;
+      }
+
+      if (r.status === 403) {
+        alert('无权限：游客不能批量删除');
+      } else {
+        alert('删除失败：' + (d.detail || r.status));
+      }
+    } catch (e) {
+      alert('网络错误：' + e.message);
+    }
+
+    batchDelBtn.disabled = false;
+    batchDelBtn.textContent = oldText;
+    updateCount();
+  };
+
+  updateCount();
+})();
+</script>
+
+</body>
+</html>

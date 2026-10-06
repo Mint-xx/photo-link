@@ -1,0 +1,40 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+env/
+ENV/
+
+# ===== 数据文件（绝对不要上传）=====
+data.db
+data.db-journal
+data.db-wal
+data.db-shm
+stats.json
+access.log
+stdout.log
+stderr.log
+
+# ===== 用户上传的照片（绝对不要上传）=====
+uploads/*
+!uploads/.gitkeep
+
+# ===== 环境变量 =====
+.env
+.env.*
+
+# ===== 系统 / 编辑器 =====
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
